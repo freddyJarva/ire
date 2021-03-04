@@ -13,6 +13,7 @@
 mod util;
 
 use crate::util::event::{Event, Events};
+use clap::clap_app;
 use regex::Regex;
 use std::{
     cmp::{max, min},
@@ -59,6 +60,16 @@ impl Default for App {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let matches = clap_app!(regex_splitter =>
+        (version: "1.0")
+        (author: "Freddy Järvå <freddy.a.jarva@gmail.com>")
+        (about: "Coding Monkey Extraordinaire")
+        (@arg FILENAME: +required)
+    )
+    .get_matches();
+
+    let filename = matches.value_of("FILENAME").unwrap();
+
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -72,7 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Create default app state
     let mut app = App::default();
 
-    let contents = fs::read_to_string("./example.log").expect("Unable to read file");
+    let contents = fs::read_to_string(filename).expect("Unable to read file");
 
     loop {
         // Draw UI
