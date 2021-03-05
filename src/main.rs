@@ -13,6 +13,7 @@
 mod util;
 
 use crate::util::event::{Event, Events};
+use crate::util::input::{Editable, Input};
 use clap::clap_app;
 use regex::Regex;
 use std::{
@@ -30,30 +31,18 @@ use tui::{
     Terminal,
 };
 use unicode_width::UnicodeWidthStr;
-
-enum InputMode {
-    Normal,
-    Editing,
-}
+use util::input::InputMode;
 
 /// App holds the state of the application
 struct App {
-    /// Current value of the input box
-    input: String,
-    /// Current input mode
-    input_mode: InputMode,
-    /// Cursor index
-    input_index: usize,
-    /// Current matching shit
+    input: Input,
     pattern_matches: Vec<String>,
 }
 
 impl Default for App {
     fn default() -> App {
         App {
-            input: String::new(),
-            input_mode: InputMode::Normal,
-            input_index: 0,
+            input: Input::default(),
             pattern_matches: Vec::new(),
         }
     }
@@ -101,7 +90,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 )
                 .split(f.size());
 
-            let (msg, style) = match app.input_mode {
+            let (msg, style) = match app.input.mode {
                 InputMode::Normal => (
                     vec![
                         Span::raw("Press "),
@@ -128,14 +117,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             let help_message = Paragraph::new(text);
             f.render_widget(help_message, chunks[0]);
 
-            let input = Paragraph::new(app.input.as_ref())
-                .style(match app.input_mode {
+            let input = Paragraph::new(app.input.text.as_ref())
+                .style(match app.input.mode {
                     InputMode::Normal => Style::default(),
                     InputMode::Editing => Style::default().fg(Color::Yellow),
                 })
                 .block(Block::default().borders(Borders::ALL).title("Input"));
             f.render_widget(input, chunks[1]);
-            match app.input_mode {
+            match app.input.mode {
                 InputMode::Normal =>
                     // Hide the cursor. `Frame` does this by default, so we don't need to do anything here
                     {}
@@ -145,16 +134,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                     f.set_cursor(
                         // Put cursor past the end of the input text
                         // chunks[1].x + app.input.width() as u16 + 1,
-                        chunks[1].x + app.input_index as u16 + 1,
+                        chunks[1].x + *app.input.idx() as u16 + 1,
                         // Move one line down, from the border to the input line
                         chunks[1].y + 1,
                     )
                 }
             }
 
-            // let pattern_matches: Vec<ListItem> = app
-            //     .pattern_matches
-            if let Ok(re) = Regex::new(&app.input) {
+            if let Ok(re) = Regex::new(&app.input.text) {
                 let pattern_matches: Vec<ListItem> = contents
                     .split('\n')
                     .filter(|s| re.is_match(s))
@@ -172,10 +159,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Handle input
         if let Event::Input(input) = events.next()? {
-            match app.input_mode {
+            match app.input.mode {
                 InputMode::Normal => match input {
                     Key::Char('e') => {
-                        app.input_mode = InputMode::Editing;
+                        app.input.mode = InputMode::Editing;
                         events.disable_exit_key();
                     }
                     Key::Char('q') => {
@@ -185,31 +172,27 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
                 InputMode::Editing => match input {
                     Key::Char('\n') => {
-                        app.pattern_matches.push(app.input.drain(..).collect());
+                        app.pattern_matches.push(app.input.text.drain(..).collect());
                     }
                     Key::Char(c) => {
-                        app.input.insert(app.input_index, c);
-                        app.input_index += 1;
+                        app.input.add(c);
                     }
-                    Key::Backspace => match app.input_index {
+                    Key::Backspace => match app.input.idx() {
                         0 => {}
                         1..=400 => {
-                            app.input.remove(app.input_index - 1);
-                            app.input_index -= 1;
+                            app.input.delete();
                         }
                         _ => {}
                     },
                     Key::Esc => {
-                        app.input_mode = InputMode::Normal;
+                        app.input.mode = InputMode::Normal;
                         events.enable_exit_key();
                     }
+                    Key::Left => {
+                        app.input.left();
+                    }
 
-                    Key::Left => match app.input_index {
-                        0 => {}
-                        1..=400 => app.input_index -= 1,
-                        _ => {}
-                    },
-                    Key::Right => app.input_index = min(app.input.len(), app.input_index + 1),
+                    Key::Right => app.input.right(),
                     _ => {}
                 },
             }
