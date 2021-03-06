@@ -52,6 +52,14 @@ impl Styled for Vec<ColorStyle> {
     }
 }
 
+pub fn filter_matches(contents: &str, re: &Regex) -> Vec<String> {
+    contents
+        .split('\n')
+        .filter(|s| re.is_match(s))
+        .map(String::from)
+        .collect()
+}
+
 pub fn collect_matches(contents: &String, re: &Regex) -> Vec<Vec<ColorStyle>> {
     let mats: Vec<&str> = contents.split('\n').filter(|s| re.is_match(s)).collect();
     let result: Vec<Vec<ColorStyle>> = mats
