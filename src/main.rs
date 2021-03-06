@@ -149,11 +149,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if let Ok(re) = Regex::new(&app.input.text) {
-                // let pattern_matches = collect_matches(&contents, &re);
                 let pattern_matches = collect_matches_old(&contents, &re);
-                // let pattern_matches = collect_matches(&contents, &re);
-                // let pattern_matches = pattern_matches.iter()
-                //     .map(|v| )
                 let pattern_matches = List::new(pattern_matches)
                     .block(Block::default().borders(Borders::ALL).title("Messages"));
                 f.render_widget(pattern_matches, chunks[2]);

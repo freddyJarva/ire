@@ -3,11 +3,16 @@ use std::fmt::{self, Display};
 use colored::Colorize;
 use regex::{Captures, Regex};
 use tui::{
+    style::{Color, Style},
     text::{Span, Spans},
     widgets::ListItem,
 };
 pub trait Colorized {
     fn highlight(&self) -> String;
+}
+
+pub trait Styled {
+    fn style(&self) -> Spans;
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -29,6 +34,22 @@ impl Colorized for Vec<ColorStyle> {
     fn highlight(&self) -> String {
         self.iter()
             .fold("".to_string(), |s, color| format!("{}{}", s, color))
+    }
+}
+
+impl Styled for Vec<ColorStyle> {
+    fn style(&self) -> Spans {
+        let spans: Vec<Span> = self
+            .iter()
+            .map(|color_style| match color_style {
+                ColorStyle::Normal(s) => Span::raw(s),
+                ColorStyle::Highlight(s) => {
+                    let span_style = Style::default().fg(Color::Yellow);
+                    Span::styled(s, span_style)
+                }
+            })
+            .collect();
+        Spans::from(spans)
     }
 }
 
@@ -138,5 +159,46 @@ mod tests {
             "lala".red().to_string(),
             ColorStyle::Highlight("lala".to_string()).to_string()
         )
+    }
+
+    #[test]
+    fn test_pattern_matching_list() {
+        // Given
+        let contents = "\
+hello world
+hello blabla world
+"
+        .to_string();
+        let re = Regex::new(r"(hello).+(world)").unwrap();
+        // When
+        let actual: Vec<String> = collect_matches(&contents, &re)
+            .iter()
+            .map(|v| v.highlight())
+            .collect();
+        assert_eq!(
+            vec![
+                format!("{} {}", "hello".red(), "world".red()),
+                format!("{} blabla {}", "hello".red(), "world".red()),
+            ],
+            actual
+        );
+    }
+
+    #[test]
+    fn givenVecColorStyle_whenStyled_thenReturnSpans() {
+        // Given
+        let contents = vec![
+            ColorStyle::Normal("lala ".to_string()),
+            ColorStyle::Highlight("hello".to_string()),
+        ];
+        let expected_style = Style::default().fg(Color::Yellow);
+        let expected = Spans::from(vec![
+            Span::raw("lala "),
+            Span::styled("hello", expected_style),
+        ]);
+        // When
+        let actual = contents.style();
+        // Then
+        assert_eq!(expected, actual)
     }
 }
