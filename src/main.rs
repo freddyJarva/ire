@@ -150,7 +150,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             if let Ok(re) = Regex::new(&app.input.text) {
                 let pattern_matches = collect_matches(&contents, &re);
-                // println!("Pattern matches: {}", pattern_matches[0][0]);
                 let pattern_matches: Vec<ListItem> = pattern_matches
                     .iter()
                     .map(|color_styles| color_styles.style())
@@ -177,7 +176,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
                 InputMode::Editing => match input {
                     Key::Char('\n') => {
-                        app.pattern_matches.push(app.input.text.drain(..).collect());
+                        break;
                     }
                     Key::Char(c) => {
                         app.input.add(c);
@@ -203,18 +202,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    Ok(())
-}
 
-fn collect_matches_old<'a>(contents: &String, re: &'a Regex) -> Vec<ListItem<'a>> {
-    let pattern_matches: Vec<ListItem> = contents
-        .split('\n')
-        .filter(|s| re.is_match(s))
-        .enumerate()
-        .map(|(i, m)| {
-            let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
-            ListItem::new(content)
-        })
-        .collect();
-    pattern_matches
+    Ok(())
 }

@@ -5,7 +5,6 @@ use regex::{Captures, Regex};
 use tui::{
     style::{Color, Style},
     text::{Span, Spans},
-    widgets::ListItem,
 };
 pub trait Colorized {
     fn highlight(&self) -> String;
@@ -54,14 +53,11 @@ impl Styled for Vec<ColorStyle> {
 }
 
 pub fn collect_matches(contents: &String, re: &Regex) -> Vec<Vec<ColorStyle>> {
-    // let pattern_matches: Vec<ListItem> = contents
     let mats: Vec<&str> = contents.split('\n').filter(|s| re.is_match(s)).collect();
-    // println!("{:?}", mats);
     let result: Vec<Vec<ColorStyle>> = mats
         .iter()
         .map(|s| split_on_matches(s, &re.captures(s).unwrap()))
         .collect();
-    // println!("Matches after processing: {:?}", result);
     result
 }
 
@@ -115,11 +111,6 @@ impl Colorized for Captures<'_> {
 #[allow(non_snake_case)]
 mod tests {
     use super::*;
-    macro_rules! s {
-        ($value:expr) => {
-            $value.to_string()
-        };
-    }
 
     macro_rules! colorstyle {
         ($style:ident $string:expr) => {
