@@ -56,24 +56,22 @@ impl Styled for Vec<ColorStyle> {
 pub fn collect_matches(contents: &String, re: &Regex) -> Vec<Vec<ColorStyle>> {
     // let pattern_matches: Vec<ListItem> = contents
     let mats: Vec<&str> = contents.split('\n').filter(|s| re.is_match(s)).collect();
+    // println!("{:?}", mats);
     let result: Vec<Vec<ColorStyle>> = mats
         .iter()
-        .map(|s| split_on_matches(&re.captures(s).unwrap()))
+        .map(|s| split_on_matches(s, &re.captures(s).unwrap()))
         .collect();
-    println!("Matches after processing: {:?}", result);
+    // println!("Matches after processing: {:?}", result);
     result
 }
 
-fn split_on_matches(captures: &regex::Captures) -> Vec<ColorStyle> {
+fn split_on_matches(full_text: &str, captures: &regex::Captures) -> Vec<ColorStyle> {
     let mut result = Vec::new();
-    let full_mat = captures.get(0).unwrap();
-    let full_text = String::from(full_mat.as_str());
 
-    let mut previous_end = 0;
-    if let 1 = captures.len() {
-        result.push(ColorStyle::Normal(captures[0].to_string()))
-    } else {
-        {
+    match captures.len() {
+        0..=1 => result.push(ColorStyle::Normal(full_text.to_string())),
+        _ => {
+            let mut previous_end = 0;
             for i in 1..captures.len() {
                 let mat = captures.get(i).unwrap();
                 if mat.start() != previous_end {
@@ -85,6 +83,9 @@ fn split_on_matches(captures: &regex::Captures) -> Vec<ColorStyle> {
                     full_text[mat.start()..mat.end()].to_string(),
                 ));
                 previous_end = mat.end();
+            }
+            if previous_end != full_text.len() {
+                result.push(ColorStyle::Normal(full_text[previous_end..].to_string()))
             }
         }
     }
@@ -114,59 +115,61 @@ impl Colorized for Captures<'_> {
 #[allow(non_snake_case)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn highlight_group_match() {
-        // Given
-        let re = Regex::new(r"(hello) (world!)").unwrap();
-        let captures = re.captures("hello world!").unwrap();
-        // When
-        let actual = captures.highlight();
-        // Then
-        assert_eq!("#hello# #world!#", actual);
+    macro_rules! s {
+        ($value:expr) => {
+            $value.to_string()
+        };
     }
 
-    #[test]
-    fn capture_split_matches_return_wrappers() {
-        // Given
-        let re = Regex::new(r".+(hello).+(world)").unwrap();
-        let captures = re.captures("lala hello bleble world").unwrap();
-        // When
-        let actual: Vec<ColorStyle> = split_on_matches(&captures);
-
-        // Then
-        assert_eq!(
-            vec![
-                ColorStyle::Normal("lala ".to_string()),
-                ColorStyle::Highlight("hello".to_string()),
-                ColorStyle::Normal(" bleble ".to_string()),
-                ColorStyle::Highlight("world".to_string()),
-            ],
-            actual
-        )
+    macro_rules! colorstyle {
+        ($style:ident $string:expr) => {
+            ColorStyle::$style($string.to_string())
+        };
     }
 
-    #[test]
-    fn givenNoCaptureGroups_whenSplitOnMatches_thenReturnVectorWithColorStyleNormalElement() {
-        // Given
-        let re = Regex::new(r".*").unwrap();
-        let captures = re.captures("lala hello bleble world").unwrap();
-        // When
-        let actual: Vec<ColorStyle> = split_on_matches(&captures);
-        // Then
-        assert_eq!(
-            vec![ColorStyle::Normal("lala hello bleble world".to_string())],
-            actual
-        )
+    macro_rules! test_split_on_matches {
+        ($($func_name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $func_name() {
+                // Given
+                let (re, content, expected) = $value;
+                let re = Regex::new(re).unwrap();
+                let captures = re.captures(content).unwrap();
+                // When
+                let actual: Vec<ColorStyle> = split_on_matches(content, &captures);
+
+                // Then
+                assert_eq!(expected, actual)
+            }
+        )*
+        };
+    }
+
+    test_split_on_matches! {
+        capture_split_matches_return_wrappers : (r".+(hello).+(world)", "lala hello bleble world", vec![
+            colorstyle!(Normal "lala "),
+            colorstyle!(Highlight "hello"),
+            colorstyle!(Normal " bleble "),
+            colorstyle!(Highlight "world"),
+        ]),
+        givenNoCaptureGroups_thenFullTextAsSingleElement : (r".*", "lala hello ", vec![colorstyle!(Normal "lala hello ")]),
+        givenEmptyPattern_thenReturnFullTextAsSingleElement : (r"", "lala ", vec![colorstyle!(Normal "lala ")]),
+        givenPartialMatch_thenReturnFullTextInElements : (r".*(lala)", "1337 lala hey ho!", vec![
+            colorstyle!(Normal "1337 "),
+            colorstyle!(Highlight "lala"),
+            colorstyle!(Normal " hey ho!"),
+        ]),
     }
 
     #[test]
     fn format_vec_colorstyle() {
         // Given
         let re = Regex::new(r".+(hello).+(world)").unwrap();
-        let captures = re.captures("lala hello bleble world").unwrap();
+        let content = "lala hello bleble world";
+        let captures = re.captures(content).unwrap();
         // When
-        let actual = split_on_matches(&captures).highlight();
+        let actual = split_on_matches(content, &captures).highlight();
 
         // Then
         assert_eq!(
@@ -209,10 +212,7 @@ hello blabla world
     #[test]
     fn givenVecColorStyle_whenStyled_thenReturnSpans() {
         // Given
-        let contents = vec![
-            ColorStyle::Normal("lala ".to_string()),
-            ColorStyle::Highlight("hello".to_string()),
-        ];
+        let contents = vec![colorstyle!(Normal "lala "), colorstyle!(Highlight "hello")];
         let expected_style = Style::default().fg(Color::Yellow);
         let expected = Spans::from(vec![
             Span::raw("lala "),
