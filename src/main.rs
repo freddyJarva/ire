@@ -107,7 +107,7 @@ fn begin_loop(
     contents: String,
     mut events: Events,
 ) -> Result<Vec<String>, Box<dyn Error>> {
-    Ok(loop {
+    loop {
         // Draw UI
         terminal
             .draw(|f| {
@@ -232,5 +232,5 @@ fn begin_loop(
                 },
             }
         }
-    })
+    }
 }
