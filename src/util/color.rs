@@ -55,12 +55,13 @@ impl Styled for Vec<ColorStyle> {
 
 pub fn collect_matches(contents: &String, re: &Regex) -> Vec<Vec<ColorStyle>> {
     // let pattern_matches: Vec<ListItem> = contents
-    let pattern_matches: Vec<Vec<ColorStyle>> = contents
-        .split('\n')
-        .filter(|s| re.is_match(s))
+    let mats: Vec<&str> = contents.split('\n').filter(|s| re.is_match(s)).collect();
+    let result: Vec<Vec<ColorStyle>> = mats
+        .iter()
         .map(|s| split_on_matches(&re.captures(s).unwrap()))
         .collect();
-    pattern_matches
+    println!("Matches after processing: {:?}", result);
+    result
 }
 
 fn split_on_matches(captures: &regex::Captures) -> Vec<ColorStyle> {
@@ -69,17 +70,23 @@ fn split_on_matches(captures: &regex::Captures) -> Vec<ColorStyle> {
     let full_text = String::from(full_mat.as_str());
 
     let mut previous_end = 0;
-    for i in 1..captures.len() {
-        let mat = captures.get(i).unwrap();
-        if mat.start() != previous_end {
-            result.push(ColorStyle::Normal(
-                full_text[previous_end..mat.start()].to_string(),
-            ));
+    if let 1 = captures.len() {
+        result.push(ColorStyle::Normal(captures[0].to_string()))
+    } else {
+        {
+            for i in 1..captures.len() {
+                let mat = captures.get(i).unwrap();
+                if mat.start() != previous_end {
+                    result.push(ColorStyle::Normal(
+                        full_text[previous_end..mat.start()].to_string(),
+                    ));
+                }
+                result.push(ColorStyle::Highlight(
+                    full_text[mat.start()..mat.end()].to_string(),
+                ));
+                previous_end = mat.end();
+            }
         }
-        result.push(ColorStyle::Highlight(
-            full_text[mat.start()..mat.end()].to_string(),
-        ));
-        previous_end = mat.end();
     }
     result
 }
@@ -104,6 +111,7 @@ impl Colorized for Captures<'_> {
 }
 
 #[cfg(test)]
+#[allow(non_snake_case)]
 mod tests {
     use super::*;
 
@@ -134,6 +142,20 @@ mod tests {
                 ColorStyle::Normal(" bleble ".to_string()),
                 ColorStyle::Highlight("world".to_string()),
             ],
+            actual
+        )
+    }
+
+    #[test]
+    fn givenNoCaptureGroups_whenSplitOnMatches_thenReturnVectorWithColorStyleNormalElement() {
+        // Given
+        let re = Regex::new(r".*").unwrap();
+        let captures = re.captures("lala hello bleble world").unwrap();
+        // When
+        let actual: Vec<ColorStyle> = split_on_matches(&captures);
+        // Then
+        assert_eq!(
+            vec![ColorStyle::Normal("lala hello bleble world".to_string())],
             actual
         )
     }
