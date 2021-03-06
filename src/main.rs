@@ -12,6 +12,7 @@
 // #[allow(dead_code)]
 mod util;
 
+use crate::util::color::collect_matches;
 use crate::util::event::{Event, Events};
 use crate::util::input::{Editable, Input};
 use clap::clap_app;
@@ -148,7 +149,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if let Ok(re) = Regex::new(&app.input.text) {
-                let pattern_matches = collect_matches(&contents, &re);
+                // let pattern_matches = collect_matches(&contents, &re);
+                let pattern_matches = collect_matches_old(&contents, &re);
+                // let pattern_matches = collect_matches(&contents, &re);
+                // let pattern_matches = pattern_matches.iter()
+                //     .map(|v| )
                 let pattern_matches = List::new(pattern_matches)
                     .block(Block::default().borders(Borders::ALL).title("Messages"));
                 f.render_widget(pattern_matches, chunks[2]);
@@ -199,7 +204,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn collect_matches<'a>(contents: &String, re: &'a Regex) -> Vec<ListItem<'a>> {
+fn collect_matches_old<'a>(contents: &String, re: &'a Regex) -> Vec<ListItem<'a>> {
     let pattern_matches: Vec<ListItem> = contents
         .split('\n')
         .filter(|s| re.is_match(s))
