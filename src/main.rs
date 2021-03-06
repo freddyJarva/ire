@@ -15,12 +15,9 @@ mod util;
 use crate::util::event::{Event, Events};
 use crate::util::input::{Editable, Input};
 use clap::clap_app;
-use regex::Regex;
-use std::{
-    cmp::{max, min},
-    error::Error,
-    fs, io,
-};
+use colored::Colorize;
+use regex::{Captures, Regex};
+use std::{error::Error, fs, io};
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::TermionBackend,
@@ -30,7 +27,7 @@ use tui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Terminal,
 };
-use unicode_width::UnicodeWidthStr;
+
 use util::input::InputMode;
 
 /// App holds the state of the application
@@ -54,8 +51,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         (author: "Freddy Järvå <freddy.a.jarva@gmail.com>")
         (about: "Coding Monkey Extraordinaire")
         (@arg FILENAME: +required)
+        (@arg TEST: -t --test +takes_value "test stuff")
     )
     .get_matches();
+
+    let test = matches.value_of("TEST");
+    match test {
+        Some(s) => {
+            println!("Hello {}!", s.red());
+            return Ok(());
+        }
+        None => {}
+    }
 
     let filename = matches.value_of("FILENAME").unwrap();
 
@@ -133,7 +140,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                     // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
                     f.set_cursor(
                         // Put cursor past the end of the input text
-                        // chunks[1].x + app.input.width() as u16 + 1,
                         chunks[1].x + *app.input.idx() as u16 + 1,
                         // Move one line down, from the border to the input line
                         chunks[1].y + 1,
@@ -142,15 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             if let Ok(re) = Regex::new(&app.input.text) {
-                let pattern_matches: Vec<ListItem> = contents
-                    .split('\n')
-                    .filter(|s| re.is_match(s))
-                    .enumerate()
-                    .map(|(i, m)| {
-                        let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
-                        ListItem::new(content)
-                    })
-                    .collect();
+                let pattern_matches = collect_matches(&contents, &re);
                 let pattern_matches = List::new(pattern_matches)
                     .block(Block::default().borders(Borders::ALL).title("Messages"));
                 f.render_widget(pattern_matches, chunks[2]);
@@ -199,4 +197,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     Ok(())
+}
+
+fn collect_matches<'a>(contents: &String, re: &'a Regex) -> Vec<ListItem<'a>> {
+    let pattern_matches: Vec<ListItem> = contents
+        .split('\n')
+        .filter(|s| re.is_match(s))
+        .enumerate()
+        .map(|(i, m)| {
+            let content = vec![Spans::from(Span::raw(format!("{}: {}", i, m)))];
+            ListItem::new(content)
+        })
+        .collect();
+    pattern_matches
 }

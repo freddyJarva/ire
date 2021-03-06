@@ -1,5 +1,8 @@
+pub mod color;
 pub mod event;
 pub mod input;
+pub mod output;
+pub mod crate_tests;
 
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::ThreadRng;
