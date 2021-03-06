@@ -93,8 +93,4 @@ impl Events {
     pub fn enable_exit_key(&mut self) {
         self.ignore_exit_key.store(false, Ordering::Relaxed);
     }
-
-    // pub fn update_matches(&mut self) {
-    //     self.
-    // }
 }
