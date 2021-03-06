@@ -1,15 +1,4 @@
-/// A simple example demonstrating how to handle user input. This is
-/// a bit out of the scope of the library as it does not provide any
-/// input handling out of the box. However, it may helps some to get
-/// started.
-///
-/// This is a very simple example:
-///   * A input box always focused. Every character you type is registered
-///   here
-///   * Pressing Backspace erases a character
-///   * Pressing Enter pushes the current input in the history of previous
-///   messages
-// #[allow(dead_code)]
+/// Simple tui that interactively shows matching lines in input
 mod util;
 
 use crate::util::color::{collect_matches, filter_matches, Styled};
