@@ -56,6 +56,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let filename = matches.value_of("FILENAME").unwrap();
+    let contents: Vec<String> = fs::read_to_string(filename)
+        .expect(&format!("Unable to read file \"{}\"", filename))
+        .split("\n")
+        .map(|s| s.to_string())
+        .collect();
 
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
@@ -69,8 +74,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Create default app state
     let app = App::default();
-
-    let contents = fs::read_to_string(filename).expect("Unable to read file");
 
     match begin_loop(terminal, app, contents, events) {
         Ok(mats) => {
@@ -93,7 +96,7 @@ fn begin_loop(
         TermionBackend<AlternateScreen<MouseTerminal<termion::raw::RawTerminal<io::Stdout>>>>,
     >,
     mut app: App,
-    contents: String,
+    contents: Vec<String>,
     mut events: Events,
 ) -> Result<Vec<String>, Box<dyn Error>> {
     loop {

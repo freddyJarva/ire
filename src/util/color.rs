@@ -52,18 +52,18 @@ impl Styled for Vec<ColorStyle> {
     }
 }
 
-pub fn filter_matches(contents: &str, re: &Regex) -> Vec<String> {
+pub fn filter_matches(contents: &Vec<String>, re: &Regex) -> Vec<String> {
     contents
-        .split('\n')
+        .iter()
         .filter(|s| re.is_match(s))
-        .map(String::from)
+        .map(|s| s.to_string())
         .collect()
 }
 
-pub fn collect_matches(contents: &String, re: &Regex) -> Vec<Vec<ColorStyle>> {
-    let mats: Vec<&str> = contents.split('\n').filter(|s| re.is_match(s)).collect();
-    let result: Vec<Vec<ColorStyle>> = mats
+pub fn collect_matches(contents: &Vec<String>, re: &Regex) -> Vec<Vec<ColorStyle>> {
+    let result: Vec<Vec<ColorStyle>> = contents
         .iter()
+        .filter(|s| re.is_match(s))
         .map(|s| split_on_matches(s, &re.captures(s).unwrap()))
         .collect();
     result
@@ -185,14 +185,25 @@ mod tests {
         )
     }
 
+    macro_rules! svec {
+        ($multiline_string:expr) => {
+            $multiline_string
+                .to_string()
+                .split('\n')
+                .map(|s| s.to_string())
+                .collect()
+        };
+    }
+
     #[test]
     fn test_pattern_matching_list() {
         // Given
-        let contents = "\
+        let contents = svec!(
+            "\
 hello world
 hello blabla world
 "
-        .to_string();
+        );
         let re = Regex::new(r"(hello).+(world)").unwrap();
         // When
         let actual: Vec<String> = collect_matches(&contents, &re)
