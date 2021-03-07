@@ -220,6 +220,8 @@ fn begin_loop(
                     }
 
                     Key::Right => app.input.right(),
+                    Key::Home => app.input.home(),
+                    Key::End => app.input.end(),
                     _ => {}
                 },
             }

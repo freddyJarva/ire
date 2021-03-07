@@ -58,6 +58,14 @@ impl Editable for Input {
         self.text.insert(self.idx, c);
         self.idx += 1;
     }
+
+    fn home(&mut self) {
+        self.idx = 0;
+    }
+
+    fn end(&mut self) {
+        self.idx = self.text.len();
+    }
 }
 
 pub trait Editable {
@@ -67,6 +75,8 @@ pub trait Editable {
     fn enter(&mut self);
     fn esc(&mut self);
     fn add(&mut self, c: char);
+    fn home(&mut self);
+    fn end(&mut self);
 }
 
 pub enum InputMode {
@@ -100,6 +110,8 @@ mod tests {
         left : decrement_idx_by_1: ("hello", 3, 2),
         right: when_idx_equals_textlength_then_remain : ("hello", 5, 5),
         right: increment_idx_by_1 : ("hello", 3, 4),
+        home: jump_to_idx_0 : ("hello", 3, 0),
+        end: jump_to_end_of_input_text : ("hello", 3, 5),
     }
 
     macro_rules! test_edit {
