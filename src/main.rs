@@ -122,7 +122,7 @@ fn begin_loop(
                             Span::raw("Press "),
                             Span::styled("q", Style::default().add_modifier(Modifier::BOLD)),
                             Span::raw(" to exit, "),
-                            Span::styled("e", Style::default().add_modifier(Modifier::BOLD)),
+                            Span::styled("i", Style::default().add_modifier(Modifier::BOLD)),
                             Span::raw(" to start editing."),
                         ],
                         Style::default().add_modifier(Modifier::RAPID_BLINK),
@@ -190,7 +190,7 @@ fn begin_loop(
         if let Event::Input(input) = events.next().expect("Failure on input") {
             match app.input.mode {
                 InputMode::Normal => match input {
-                    Key::Char('e') => {
+                    Key::Char('i') => {
                         app.input.mode = InputMode::Editing;
                         events.disable_exit_key();
                     }
