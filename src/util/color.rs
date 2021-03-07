@@ -2,6 +2,7 @@ use std::fmt::{self, Display};
 
 use colored::Colorize;
 use regex::{Captures, Regex};
+use std::ops::Deref;
 use tui::{
     style::{Color, Style},
     text::{Span, Spans},
@@ -38,13 +39,23 @@ impl Colorized for Vec<ColorStyle> {
 
 impl Styled for Vec<ColorStyle> {
     fn style(&self) -> Spans {
+        let hs = vec![Color::Yellow, Color::Blue, Color::Red];
+        let mut highlight_styles = hs.iter().cycle();
+
         let spans: Vec<Span> = self
             .iter()
             .map(|color_style| match color_style {
                 ColorStyle::Normal(s) => Span::raw(s),
                 ColorStyle::Highlight(s) => {
-                    let span_style = Style::default().fg(Color::Yellow);
-                    Span::styled(s, span_style)
+                    let style = match highlight_styles.next().unwrap() {
+                        Color::Red => Style::default().fg(Color::Red),
+                        Color::Yellow => Style::default().fg(Color::Yellow),
+                        Color::Blue => Style::default().fg(Color::Blue),
+                        _ => Style::default().fg(Color::Green),
+                    };
+                    // let span_style = Style::default().fg(Color::Yellow);
+
+                    Span::styled(s, style)
                 }
             })
             .collect();
@@ -227,6 +238,32 @@ hello blabla world
         let expected = Spans::from(vec![
             Span::raw("lala "),
             Span::styled("hello", expected_style),
+        ]);
+        // When
+        let actual = contents.style();
+        // Then
+        assert_eq!(expected, actual)
+    }
+
+    #[test]
+    fn givenMultipleHighLights_whenStyled_thenReturnSpansOfDifferentColors() {
+        // Given
+        let contents = vec![
+            colorstyle!(Normal "lala "),
+            colorstyle!(Highlight "hello"),
+            colorstyle!(Highlight "blue"),
+            colorstyle!(Highlight "red"),
+            colorstyle!(Normal "world"),
+        ];
+        let yellow = Style::default().fg(Color::Yellow);
+        let blue = Style::default().fg(Color::Blue);
+        let red = Style::default().fg(Color::Red);
+        let expected = Spans::from(vec![
+            Span::raw("lala "),
+            Span::styled("hello", yellow),
+            Span::styled("blue", blue),
+            Span::styled("red", red),
+            Span::raw("world"),
         ]);
         // When
         let actual = contents.style();
