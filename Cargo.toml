@@ -1,0 +1,20 @@
+[package]
+name = "ire"
+version = "0.1.0"
+authors = ["Freddy Järvå <freddy.jarva@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "2.33.3"
+colored = "2.0.0"
+lazy_static = "1.4.0"
+regex = "1.4.3"
+# crossterm = "0.18"
+tui = { version = "0.14", features = ["termion"]}
+serde = {version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+termion = "1.5.6"
+unicode-width = "0.1.8"
