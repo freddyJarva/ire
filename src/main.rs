@@ -201,6 +201,8 @@ fn begin_loop(
                 },
                 InputMode::Editing => match input {
                     Key::Char('\n') => return Ok(app.pattern_matches),
+                    Key::Alt(',') => app.input.previous_boundary(),
+                    Key::Alt('.') => app.input.next_boundary(),
                     Key::Char(c) => {
                         app.input.add(c);
                     }

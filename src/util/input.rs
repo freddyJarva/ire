@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{max, min};
 
 pub struct Input {
     pub text: String,
@@ -66,6 +66,35 @@ impl Editable for Input {
     fn end(&mut self) {
         self.idx = self.text.len();
     }
+
+    fn next_boundary(&mut self) {
+        let starting_point = min(self.text.len(), self.idx + 1);
+
+        let substr = &self.text[starting_point..];
+        if let Some(boundary_idx) = substr.find(' ') {
+            // we ignore one position earlier, need to add it back with + 1
+            self.idx += boundary_idx + 1;
+        } else {
+            self.idx = self.text.len();
+        }
+    }
+
+    fn previous_boundary(&mut self) {
+        match self.idx {
+            0 => {}
+            _ => {
+                let substr = &self.text[..self.idx];
+                let substr: String = substr.chars().rev().collect();
+
+                if let Some(boundary_idx) = substr.find(' ') {
+                    // we ignore one position earlier, need to add it back with + 1
+                    self.idx -= boundary_idx + 1;
+                } else {
+                    self.idx = 0;
+                }
+            }
+        }
+    }
 }
 
 pub trait Editable {
@@ -77,6 +106,8 @@ pub trait Editable {
     fn add(&mut self, c: char);
     fn home(&mut self);
     fn end(&mut self);
+    fn next_boundary(&mut self);
+    fn previous_boundary(&mut self);
 }
 
 pub enum InputMode {
@@ -111,7 +142,16 @@ mod tests {
         right: when_idx_equals_textlength_then_remain : ("hello", 5, 5),
         right: increment_idx_by_1 : ("hello", 3, 4),
         home: jump_to_idx_0 : ("hello", 3, 0),
-        end: jump_to_end_of_input_text : ("hello", 3, 5),
+        end: jump_to_end_of_input : ("hello", 3, 5),
+        next_boundary: given_no_white_space_then_jump_to_end_of_input : ("hello", 1, 5),
+        next_boundary: given_multiple_words_then_jump_to_end_of_current_word : ("hello world", 1, 5),
+        next_boundary: given_already_at_end_then_remain : ("hello world", 11, 11),
+        next_boundary: given_current_idx_is_boundary_then_choose_next_boundary_match : ("hello world", 5, 11),
+        previous_boundary: given_no_white_space_then_jump_to_start_of_input : ("hello", 3, 0),
+        previous_boundary: given_multiple_words_then_jump_to_start_of_current_word : ("hello world", 8, 5),
+        previous_boundary: given_already_at_start_then_remain : ("hello world", 0, 0),
+        previous_boundary: given_current_idx_is_boundary_then_choose_previous_boundary_match : ("hello world", 5, 0),
+        previous_boundary: never_go_negative : ("hello world", 5, 0),
     }
 
     macro_rules! test_edit {
