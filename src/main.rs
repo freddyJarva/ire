@@ -69,10 +69,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let backend = TermionBackend::new(stdout);
     let terminal = Terminal::new(backend)?;
 
-    // Setup event handlers
     let events = Events::new();
 
-    // Create default app state
     let app = App::default();
 
     match begin_loop(terminal, app, contents, events) {
