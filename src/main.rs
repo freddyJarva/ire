@@ -74,12 +74,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let app = App::default();
 
     match begin_loop(terminal, app, contents, events) {
-        Ok(mats) => {
+        // matches execute when exiting the program
+        Ok((pattern, mats)) => {
             let stdout = io::stdout();
             let mut handle = io::BufWriter::new(stdout.lock());
             for line in mats {
                 writeln!(handle, "{}", line)?;
             }
+            writeln!(handle, "Lines were matched with: {}", pattern.green())?;
         }
         Err(err) => {
             eprintln!("program crash: {}", err)
@@ -96,7 +98,7 @@ fn begin_loop(
     mut app: App,
     contents: Vec<String>,
     mut events: Events,
-) -> Result<Vec<String>, Box<dyn Error>> {
+) -> Result<(String, Vec<String>), Box<dyn Error>> {
     loop {
         // Draw UI
         terminal
@@ -198,7 +200,7 @@ fn begin_loop(
                     _ => {}
                 },
                 InputMode::Editing => match input {
-                    Key::Char('\n') => return Ok(app.pattern_matches),
+                    Key::Char('\n') => return Ok((app.input.text, app.pattern_matches)),
                     Key::Alt(',') => app.input.previous_boundary(),
                     Key::Alt('.') => app.input.next_boundary(),
                     Key::Char(c) => {
