@@ -88,7 +88,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "fj_rust"
+name = "hermit-abi"
+version = "0.1.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "ire"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -101,15 +110,6 @@ dependencies = [
  "termion",
  "tui",
  "unicode-width",
-]
-
-[[package]]
-name = "hermit-abi"
-version = "0.1.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "322f4de77956e22ed0e5032c359a0f1273f1f7f0d79bfa3b8ffbc730d7fbcc5c"
-dependencies = [
- "libc",
 ]
 
 [[package]]

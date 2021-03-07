@@ -1,5 +1,5 @@
 [package]
-name = "fj_rust"
+name = "ire"
 version = "0.1.0"
 authors = ["Freddy Järvå <freddy.jarva@gmail.com>"]
 edition = "2018"
