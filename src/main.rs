@@ -2,6 +2,7 @@
 mod color;
 mod crate_tests;
 mod event;
+mod capture;
 mod input;
 
 use crate::color::{collect_matches, filter_matches, Styled};

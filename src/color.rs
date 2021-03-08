@@ -159,6 +159,11 @@ mod tests {
         given0or1MatchReturnsNone_thenDoNotReturnIt : (r"(lala)?(bleble)", "bleble", vec![
             colorstyle!(Highlight "bleble"),
         ]),
+        // given0toNMatchReturnsMultiple_thenReturnEachGroupAsSeparateHighlight : (r"(lala )*", "lala lala ", vec![
+        //     colorstyle!(Highlight "lala "),
+        //     colorstyle!(Highlight "lala "),
+        // ]),
+
     }
 
     #[test]
