@@ -17,7 +17,7 @@ impl MatchSet {
         self.to_strings().join(",")
     }
 
-    fn to_strings(&self) -> Vec<String> {
+    pub fn to_strings(&self) -> Vec<String> {
         let res: Vec<String> = self
             .items
             .iter()

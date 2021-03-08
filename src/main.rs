@@ -11,6 +11,7 @@ use crate::event::{Event, Events};
 use crate::input::{Editable, Input};
 use clap::clap_app;
 use colored::Colorize;
+use csv::Writer;
 use glob::glob;
 use regex::Regex;
 use std::io::Write;
@@ -51,6 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         (about: "Coding Monkey Extraordinaire")
         (@arg FILENAME: +required conflicts_with[GLOB])
         (@arg GLOB: -g --glob +takes_value "use glob pattern to read from multiple files")
+        (@arg OUTPUT: -o --output +takes_value "write result to file")
     )
     .get_matches();
 
@@ -84,12 +86,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     match begin_loop(terminal, app, contents, events) {
         // matches execute when exiting the program
         Ok((pattern, mats)) => {
-            let stdout = io::stdout();
-            let mut handle = io::BufWriter::new(stdout.lock());
+            // let stdout = io::stdout();
+            // let mut handle = io::BufWriter::new(stdout.lock());
+            let mut writer = Writer::from_path("./lala.csv").unwrap();
             for line in mats {
-                writeln!(handle, "{}", line.to_tsv_row())?;
+                writer.write_record(line.to_strings());
+                // writeln!(handle, "{}", line.to_tsv_row())?;
             }
-            writeln!(handle, "Lines were matched with: {}", pattern.green())?;
+            // writeln!(handle, "Lines were matched with: {}", pattern.green())?;
         }
         Err(err) => {
             eprintln!("program crash: {}", err)
