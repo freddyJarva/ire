@@ -88,16 +88,17 @@ fn split_on_matches(full_text: &str, captures: &regex::Captures) -> Vec<ColorSty
         _ => {
             let mut previous_end = 0;
             for i in 1..captures.len() {
-                let mat = captures.get(i).unwrap();
-                if mat.start() != previous_end {
-                    result.push(ColorStyle::Normal(
-                        full_text[previous_end..mat.start()].to_string(),
+                if let Some(mat) = captures.get(i) {
+                    if mat.start() != previous_end {
+                        result.push(ColorStyle::Normal(
+                            full_text[previous_end..mat.start()].to_string(),
+                        ));
+                    }
+                    result.push(ColorStyle::Highlight(
+                        full_text[mat.start()..mat.end()].to_string(),
                     ));
+                    previous_end = mat.end();
                 }
-                result.push(ColorStyle::Highlight(
-                    full_text[mat.start()..mat.end()].to_string(),
-                ));
-                previous_end = mat.end();
             }
             if previous_end != full_text.len() {
                 result.push(ColorStyle::Normal(full_text[previous_end..].to_string()))
@@ -105,25 +106,6 @@ fn split_on_matches(full_text: &str, captures: &regex::Captures) -> Vec<ColorSty
         }
     }
     result
-}
-
-impl Colorized for Captures<'_> {
-    fn highlight(&self) -> String {
-        let mut result = self.get(0).unwrap().as_str().to_string();
-        match &self.len() {
-            1 => {}
-            _ => {
-                for i in 1..self.len() {
-                    result = result.replacen(
-                        self.get(i).unwrap().as_str(),
-                        &format!("#{}#", self.get(i).unwrap().as_str()),
-                        1,
-                    );
-                }
-            }
-        }
-        result
-    }
 }
 
 #[cfg(test)]
@@ -169,6 +151,13 @@ mod tests {
             colorstyle!(Normal "1337 "),
             colorstyle!(Highlight "lala"),
             colorstyle!(Normal " hey ho!"),
+        ]),
+        givenNonCapturingGroup_thenUseNormalColorStyle : (r"(?:lala )(bleble)", "lala bleble", vec![
+            colorstyle!(Normal "lala "),
+            colorstyle!(Highlight "bleble"),
+        ]),
+        given0or1MatchReturnsNone_thenDoNotReturnIt : (r"(lala)?(bleble)", "bleble", vec![
+            colorstyle!(Highlight "bleble"),
         ]),
     }
 
