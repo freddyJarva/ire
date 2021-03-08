@@ -41,7 +41,7 @@ impl Default for App {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = clap_app!(regex_splitter =>
+    let matches = clap_app!(interactive_regex =>
         (version: "1.0")
         (author: "Freddy Järvå <freddy.a.jarva@gmail.com>")
         (about: "Coding Monkey Extraordinaire")
