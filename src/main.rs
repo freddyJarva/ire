@@ -45,8 +45,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         (version: "1.0")
         (author: "Freddy Järvå <freddy.a.jarva@gmail.com>")
         (about: "Coding Monkey Extraordinaire")
-        (@arg FILENAME: +required)
-        (@arg GLOB: -g --glob +takes_value +required conflicts_with[FILENAME] "use glob pattern to read from multiple files")
+        (@arg FILENAME: +required conflicts_with[GLOB])
+        (@arg GLOB: -g --glob +takes_value "use glob pattern to read from multiple files")
     )
     .get_matches();
 
