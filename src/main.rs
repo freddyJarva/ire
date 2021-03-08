@@ -1,11 +1,12 @@
+mod capture;
 /// Simple tui that interactively shows matching lines in input
 mod color;
 mod crate_tests;
 mod event;
-mod capture;
 mod input;
 
-use crate::color::{collect_matches, filter_matches, Styled};
+use crate::capture::{filter_matches, into_matchsets, MatchSet};
+use crate::color::Styled;
 use crate::event::{Event, Events};
 use crate::input::{Editable, Input};
 use clap::clap_app;
@@ -29,13 +30,15 @@ use input::InputMode;
 /// App holds the state of the application
 struct App {
     input: Input,
-    pattern_matches: Vec<String>,
+    // pattern_matches: Vec<String>,
+    pattern_matches: Vec<MatchSet>,
 }
 
 impl Default for App {
     fn default() -> App {
         App {
             input: Input::default(),
+            // pattern_matches: Vec::new(),
             pattern_matches: Vec::new(),
         }
     }
@@ -84,7 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let stdout = io::stdout();
             let mut handle = io::BufWriter::new(stdout.lock());
             for line in mats {
-                writeln!(handle, "{}", line)?;
+                writeln!(handle, "{}", line.as_csv_row())?;
             }
             writeln!(handle, "Lines were matched with: {}", pattern.green())?;
         }
@@ -103,7 +106,7 @@ fn begin_loop(
     mut app: App,
     contents: Vec<String>,
     mut events: Events,
-) -> Result<(String, Vec<String>), Box<dyn Error>> {
+) -> Result<(String, Vec<MatchSet>), Box<dyn Error>> {
     loop {
         // Draw UI
         terminal
@@ -173,9 +176,10 @@ fn begin_loop(
 
                 match Regex::new(&app.input.text) {
                     Ok(re) => {
-                        app.pattern_matches = filter_matches(&contents, &re);
-                        let pattern_matches = collect_matches(&contents, &re);
-                        let pattern_matches: Vec<ListItem> = pattern_matches
+                        let matches = filter_matches(&contents, &re);
+                        app.pattern_matches = into_matchsets(&matches);
+                        let pattern_matches: Vec<ListItem> = app
+                            .pattern_matches
                             .iter()
                             .map(|color_styles| color_styles.style())
                             .map(|spans| ListItem::new(spans))

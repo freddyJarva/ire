@@ -8,8 +8,35 @@ pub enum MatchType {
 
 #[derive(Debug, PartialEq)]
 pub struct MatchSet {
-    items: Vec<MatchType>,
-    full_text: String,
+    pub items: Vec<MatchType>,
+    pub full_text: String,
+}
+
+impl MatchSet {
+    pub fn as_csv_row(&self) -> String {
+        let res: Vec<String> = self
+            .items
+            .iter()
+            .filter(|mt| match mt {
+                MatchType::Group(_) => true,
+                _ => false,
+            })
+            .map(|mt| match mt {
+                MatchType::Group(s) => s.to_string(),
+                _ => "".to_string(),
+            })
+            .collect();
+        res.join(",")
+    }
+}
+
+impl Default for MatchSet {
+    fn default() -> Self {
+        MatchSet {
+            items: Vec::new(),
+            full_text: "".to_string(),
+        }
+    }
 }
 
 pub fn into_matchset(full_text: &str, captures: &regex::Captures) -> MatchSet {
@@ -41,6 +68,23 @@ pub fn into_matchset(full_text: &str, captures: &regex::Captures) -> MatchSet {
         full_text: full_text.to_string(),
         items,
     }
+}
+
+pub fn filter_matches<'a>(contents: &'a [String], re: &Regex) -> Vec<(&'a str, Captures<'a>)> {
+    contents
+        .iter()
+        .map(String::as_str)
+        .filter(|s| re.is_match(s))
+        .map(|s| (s, re.captures(s).unwrap()))
+        .collect()
+}
+
+pub fn into_matchsets(captures: &[(&str, Captures)]) -> Vec<MatchSet> {
+    let result: Vec<MatchSet> = captures
+        .iter()
+        .map(|(s, cap)| into_matchset(s, cap))
+        .collect();
+    result
 }
 
 #[cfg(test)]
@@ -98,10 +142,22 @@ mod tests {
         given0or1MatchReturnsNone_thenDoNotReturnIt : (r"(lala)?(bleble)", "bleble", vec![
             matchtype!(Group "bleble"),
         ]),
-        given0toNMatchReturnsMultiple_thenReturnEachPartAsSeparateGroup : (r"(lala )*", "lala lala ", vec![
-            matchtype!(Group "lala "),
-            matchtype!(Group "lala "),
-        ]),
+        // TODO given0toNMatchReturnsMultiple_thenReturnEachPartAsSeparateGroup : (r"(lala )*", "lala lala ", vec![
+        //     matchtype!(Group "lala "),
+        //     matchtype!(Group "lala "),
+        // ]),
 
+    }
+
+    #[test]
+    fn as_csv_row() {
+        // Given
+        let mut match_set = MatchSet::default();
+        match_set.items = vec![
+            matchtype!(Normal "drop"),
+            matchtype!(Group "remain"),
+            matchtype!(Group "remain also"),
+        ];
+        assert_eq!("remain,remain also", &match_set.as_csv_row())
     }
 }

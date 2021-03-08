@@ -1,12 +1,12 @@
 use std::fmt::{self, Display};
 
 use colored::Colorize;
-use regex::{Captures, Regex};
-use std::ops::Deref;
 use tui::{
     style::{Color, Style},
     text::{Span, Spans},
 };
+
+use crate::capture::{MatchSet, MatchType};
 pub trait Colorized {
     fn highlight(&self) -> String;
 }
@@ -63,54 +63,36 @@ impl Styled for Vec<ColorStyle> {
     }
 }
 
-pub fn filter_matches(contents: &Vec<String>, re: &Regex) -> Vec<String> {
-    contents
-        .iter()
-        .filter(|s| re.is_match(s))
-        .map(|s| s.to_string())
-        .collect()
-}
+impl Styled for MatchSet {
+    fn style(&self) -> Spans {
+        let hs = vec![Color::Yellow, Color::Blue, Color::Red];
+        let mut highlight_styles = hs.iter().cycle();
 
-pub fn collect_matches(contents: &Vec<String>, re: &Regex) -> Vec<Vec<ColorStyle>> {
-    let result: Vec<Vec<ColorStyle>> = contents
-        .iter()
-        .filter(|s| re.is_match(s))
-        .map(|s| split_on_matches(s, &re.captures(s).unwrap()))
-        .collect();
-    result
-}
-
-fn split_on_matches(full_text: &str, captures: &regex::Captures) -> Vec<ColorStyle> {
-    let mut result = Vec::new();
-
-    match captures.len() {
-        0..=1 => result.push(ColorStyle::Normal(full_text.to_string())),
-        _ => {
-            let mut previous_end = 0;
-            for i in 1..captures.len() {
-                if let Some(mat) = captures.get(i) {
-                    if mat.start() != previous_end {
-                        result.push(ColorStyle::Normal(
-                            full_text[previous_end..mat.start()].to_string(),
-                        ));
-                    }
-                    result.push(ColorStyle::Highlight(
-                        full_text[mat.start()..mat.end()].to_string(),
-                    ));
-                    previous_end = mat.end();
+        let spans: Vec<Span> = self
+            .items
+            .iter()
+            .map(|color_style| match color_style {
+                MatchType::Normal(s) => Span::raw(s),
+                MatchType::Group(s) => {
+                    let style = match highlight_styles.next().unwrap() {
+                        Color::Red => Style::default().fg(Color::Red),
+                        Color::Yellow => Style::default().fg(Color::Yellow),
+                        Color::Blue => Style::default().fg(Color::Blue),
+                        _ => Style::default().fg(Color::Green),
+                    };
+                    Span::styled(s, style)
                 }
-            }
-            if previous_end != full_text.len() {
-                result.push(ColorStyle::Normal(full_text[previous_end..].to_string()))
-            }
-        }
+            })
+            .collect();
+        Spans::from(spans)
     }
-    result
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
+    use regex::Regex;
+
     use super::*;
 
     macro_rules! colorstyle {
@@ -119,81 +101,12 @@ mod tests {
         };
     }
 
-    macro_rules! test_split_on_matches {
-        ($($func_name:ident: $value:expr,)*) => {
-        $(
-            #[test]
-            fn $func_name() {
-                // Given
-                let (re, content, expected) = $value;
-                let re = Regex::new(re).unwrap();
-                let captures = re.captures(content).unwrap();
-                // When
-                let actual: Vec<ColorStyle> = split_on_matches(content, &captures);
-
-                // Then
-                assert_eq!(expected, actual)
-            }
-        )*
-        };
-    }
-
-    #[test]
-    fn format_vec_colorstyle() {
-        // Given
-        let re = Regex::new(r".+(hello).+(world)").unwrap();
-        let content = "lala hello bleble world";
-        let captures = re.captures(content).unwrap();
-        // When
-        let actual = split_on_matches(content, &captures).highlight();
-
-        // Then
-        assert_eq!(
-            format!("lala {} bleble {}", "hello".red(), "world".red()),
-            actual
-        )
-    }
-
     #[test]
     fn display_colorstyle() {
         assert_eq!(
             "lala".red().to_string(),
             ColorStyle::Highlight("lala".to_string()).to_string()
         )
-    }
-
-    macro_rules! svec {
-        ($multiline_string:expr) => {
-            $multiline_string
-                .to_string()
-                .split('\n')
-                .map(|s| s.to_string())
-                .collect()
-        };
-    }
-
-    #[test]
-    fn test_pattern_matching_list() {
-        // Given
-        let contents = svec!(
-            "\
-hello world
-hello blabla world
-"
-        );
-        let re = Regex::new(r"(hello).+(world)").unwrap();
-        // When
-        let actual: Vec<String> = collect_matches(&contents, &re)
-            .iter()
-            .map(|v| v.highlight())
-            .collect();
-        assert_eq!(
-            vec![
-                format!("{} {}", "hello".red(), "world".red()),
-                format!("{} blabla {}", "hello".red(), "world".red()),
-            ],
-            actual
-        );
     }
 
     #[test]
