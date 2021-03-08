@@ -54,22 +54,6 @@ mod tests {
         };
     }
 
-    macro_rules! matchset {
-        ($full_string:expr, $v:expr, $($mtype:ident $s:expr,)*) => {
-            $(
-                v.add(MatchType::$mtype($s.to_string()));
-            )*
-            MatchSet {
-                full_text: $full_string,
-                items: vec![
-                    $(
-                        MatchType::$mtype($s.to_string())
-                    )*
-                ]
-            }
-        }
-    }
-
     macro_rules! test_into_matchset {
         ($($func_name:ident: $value:expr,)*) => {
         $(
