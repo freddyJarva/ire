@@ -87,7 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let stdout = io::stdout();
             let mut handle = io::BufWriter::new(stdout.lock());
             for line in mats {
-                writeln!(handle, "{}", line.as_csv_row())?;
+                writeln!(handle, "{}", line.to_tsv_row())?;
             }
             writeln!(handle, "Lines were matched with: {}", pattern.green())?;
         }

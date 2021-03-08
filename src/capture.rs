@@ -13,7 +13,11 @@ pub struct MatchSet {
 }
 
 impl MatchSet {
-    pub fn as_csv_row(&self) -> String {
+    pub fn to_csv_row(&self) -> String {
+        self.to_strings().join(",")
+    }
+
+    fn to_strings(&self) -> Vec<String> {
         let res: Vec<String> = self
             .items
             .iter()
@@ -26,7 +30,11 @@ impl MatchSet {
                 _ => "".to_string(),
             })
             .collect();
-        res.join(",")
+        res
+    }
+
+    pub fn to_tsv_row(&self) -> String {
+        self.to_strings().join("\t")
     }
 }
 
@@ -146,18 +154,33 @@ mod tests {
         //     matchtype!(Group "lala "),
         //     matchtype!(Group "lala "),
         // ]),
-
     }
 
-    #[test]
-    fn as_csv_row() {
-        // Given
-        let mut match_set = MatchSet::default();
-        match_set.items = vec![
+    macro_rules! test_print_options {
+        ($($func_name:ident: $test_name:ident: $values:expr,)*) => {
+            $(
+                #[test]
+                fn $test_name() {
+                    // Given
+                    let (expected, items) = $values;
+                    let mut match_set = MatchSet::default();
+                    match_set.items = items;
+                    assert_eq!(expected, &match_set.$func_name())
+                }
+            )*
+        }
+    }
+
+    test_print_options! {
+        to_csv_row : return_comma_separated_row :  ("remain,remain also", vec![
             matchtype!(Normal "drop"),
             matchtype!(Group "remain"),
             matchtype!(Group "remain also"),
-        ];
-        assert_eq!("remain,remain also", &match_set.as_csv_row())
+        ]),
+        to_tsv_row : return_tab_separated_row : ("remain\tremain also", vec![
+            matchtype!(Normal "drop"),
+            matchtype!(Group "remain"),
+            matchtype!(Group "remain also"),
+        ]),
     }
 }
