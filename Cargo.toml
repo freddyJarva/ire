@@ -18,3 +18,4 @@ serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 termion = "1.5.6"
 unicode-width = "0.1.8"
+glob = "0.3.0"

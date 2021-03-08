@@ -6,6 +6,7 @@ use crate::util::event::{Event, Events};
 use crate::util::input::{Editable, Input};
 use clap::clap_app;
 use colored::Colorize;
+use glob::glob;
 use regex::Regex;
 use std::io::Write;
 use std::{error::Error, fs, io};
@@ -41,7 +42,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         (version: "1.0")
         (author: "Freddy Järvå <freddy.a.jarva@gmail.com>")
         (about: "Coding Monkey Extraordinaire")
-        (@arg FILENAME: +required)
+        (@arg FILENAME: )
+        (@arg GLOB: -g --glob +takes_value "use glob pattern to read from multiple files")
         (@arg TEST: -t --test +takes_value "test stuff")
     )
     .get_matches();
@@ -55,12 +57,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         None => {}
     }
 
-    let filename = matches.value_of("FILENAME").unwrap();
-    let contents: Vec<String> = fs::read_to_string(filename)
-        .expect(&format!("Unable to read file \"{}\"", filename))
-        .split("\n")
-        .map(|s| s.to_string())
-        .collect();
+    let contents: Vec<String> = if let Some(glob_pattern) = matches.value_of("GLOB") {
+        let mut strings: Vec<String> = Vec::new();
+        for entry in glob(glob_pattern).unwrap() {
+            let file_content = fs::read_to_string(entry.unwrap()).unwrap();
+            strings.extend(file_content.split('\n').map(|s| s.to_string()));
+        }
+        strings
+    } else {
+        let filename = matches.value_of("FILENAME").unwrap();
+        fs::read_to_string(filename)
+            .expect(&format!("Unable to read file \"{}\"", filename))
+            .split("\n")
+            .map(|s| s.to_string())
+            .collect()
+    };
 
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode()?;
