@@ -44,18 +44,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         (about: "Coding Monkey Extraordinaire")
         (@arg FILENAME: )
         (@arg GLOB: -g --glob +takes_value "use glob pattern to read from multiple files")
-        (@arg TEST: -t --test +takes_value "test stuff")
     )
     .get_matches();
-
-    let test = matches.value_of("TEST");
-    match test {
-        Some(s) => {
-            println!("Hello {}!", s.red());
-            return Ok(());
-        }
-        None => {}
-    }
 
     let contents: Vec<String> = if let Some(glob_pattern) = matches.value_of("GLOB") {
         let mut strings: Vec<String> = Vec::new();
