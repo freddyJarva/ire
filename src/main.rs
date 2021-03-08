@@ -1,9 +1,12 @@
 /// Simple tui that interactively shows matching lines in input
-mod util;
+mod color;
+mod crate_tests;
+mod event;
+mod input;
 
-use crate::util::color::{collect_matches, filter_matches, Styled};
-use crate::util::event::{Event, Events};
-use crate::util::input::{Editable, Input};
+use crate::color::{collect_matches, filter_matches, Styled};
+use crate::event::{Event, Events};
+use crate::input::{Editable, Input};
 use clap::clap_app;
 use colored::Colorize;
 use glob::glob;
@@ -20,7 +23,7 @@ use tui::{
     Terminal,
 };
 
-use util::input::InputMode;
+use input::InputMode;
 
 /// App holds the state of the application
 struct App {
