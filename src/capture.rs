@@ -44,6 +44,7 @@ pub fn into_matchset(full_text: &str, captures: &regex::Captures) -> MatchSet {
 }
 
 #[cfg(test)]
+#[allow(non_snake_case)]
 mod tests {
     use super::*;
 
@@ -53,17 +54,70 @@ mod tests {
         };
     }
 
-    #[test]
-    fn filter_matches_returns_iterator() {
-        let re = Regex::new(r"(hello) world").unwrap();
-        let expected = MatchSet {
-            items: vec![matchtype!(Group "hello"), matchtype!(Normal " world")],
-            full_text: "hello world".to_string(),
+    macro_rules! matchset {
+        ($full_string:expr, $v:expr, $($mtype:ident $s:expr,)*) => {
+            $(
+                v.add(MatchType::$mtype($s.to_string()));
+            )*
+            MatchSet {
+                full_text: $full_string,
+                items: vec![
+                    $(
+                        MatchType::$mtype($s.to_string())
+                    )*
+                ]
+            }
+        }
+    }
+
+    macro_rules! test_into_matchset {
+        ($($func_name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $func_name() {
+                // Given
+                let (re, content, items) = $value;
+                let re = Regex::new(re).unwrap();
+                let captures = re.captures(content).unwrap();
+                let expected = MatchSet {
+                    full_text: content.to_string(),
+                    items: items
+                };
+                // When
+                let actual: MatchSet = into_matchset(content, &captures);
+
+                // Then
+                assert_eq!(expected, actual)
+            }
+        )*
         };
-        let captures = re.captures("hello world").unwrap();
-        // When
-        let actual = into_matchset("hello world", &captures);
-        // Then
-        assert_eq!(expected, actual)
+    }
+
+    test_into_matchset! {
+        into_match_set_basetest : (r".+(hello).+(world)", "lala hello bleble world", vec![
+            matchtype!(Normal "lala "),
+            matchtype!(Group "hello"),
+            matchtype!(Normal " bleble "),
+            matchtype!(Group "world"),
+        ]),
+        givenNoCaptureGroups_thenFullTextAsSingleElement : (r".*", "lala hello ", vec![matchtype!(Normal "lala hello ")]),
+        givenEmptyPattern_thenReturnFullTextAsSingleElement : (r"", "lala ", vec![matchtype!(Normal "lala ")]),
+        givenPartialMatch_thenReturnRemainingSubstringsAsNormal : (r".*(lala)", "1337 lala hey ho!", vec![
+            matchtype!(Normal "1337 "),
+            matchtype!(Group "lala"),
+            matchtype!(Normal " hey ho!"),
+        ]),
+        givenNonCapturingGroup_thenReturnNormal : (r"(?:lala )(bleble)", "lala bleble", vec![
+            matchtype!(Normal "lala "),
+            matchtype!(Group "bleble"),
+        ]),
+        given0or1MatchReturnsNone_thenDoNotReturnIt : (r"(lala)?(bleble)", "bleble", vec![
+            matchtype!(Group "bleble"),
+        ]),
+        given0toNMatchReturnsMultiple_thenReturnEachPartAsSeparateGroup : (r"(lala )*", "lala lala ", vec![
+            matchtype!(Group "lala "),
+            matchtype!(Group "lala "),
+        ]),
+
     }
 }

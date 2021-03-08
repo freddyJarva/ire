@@ -138,34 +138,6 @@ mod tests {
         };
     }
 
-    test_split_on_matches! {
-        capture_split_matches_return_wrappers : (r".+(hello).+(world)", "lala hello bleble world", vec![
-            colorstyle!(Normal "lala "),
-            colorstyle!(Highlight "hello"),
-            colorstyle!(Normal " bleble "),
-            colorstyle!(Highlight "world"),
-        ]),
-        givenNoCaptureGroups_thenFullTextAsSingleElement : (r".*", "lala hello ", vec![colorstyle!(Normal "lala hello ")]),
-        givenEmptyPattern_thenReturnFullTextAsSingleElement : (r"", "lala ", vec![colorstyle!(Normal "lala ")]),
-        givenPartialMatch_thenReturnFullTextInElements : (r".*(lala)", "1337 lala hey ho!", vec![
-            colorstyle!(Normal "1337 "),
-            colorstyle!(Highlight "lala"),
-            colorstyle!(Normal " hey ho!"),
-        ]),
-        givenNonCapturingGroup_thenUseNormalColorStyle : (r"(?:lala )(bleble)", "lala bleble", vec![
-            colorstyle!(Normal "lala "),
-            colorstyle!(Highlight "bleble"),
-        ]),
-        given0or1MatchReturnsNone_thenDoNotReturnIt : (r"(lala)?(bleble)", "bleble", vec![
-            colorstyle!(Highlight "bleble"),
-        ]),
-        // given0toNMatchReturnsMultiple_thenReturnEachGroupAsSeparateHighlight : (r"(lala )*", "lala lala ", vec![
-        //     colorstyle!(Highlight "lala "),
-        //     colorstyle!(Highlight "lala "),
-        // ]),
-
-    }
-
     #[test]
     fn format_vec_colorstyle() {
         // Given
