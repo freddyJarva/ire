@@ -13,6 +13,10 @@ pub struct MatchSet {
 }
 
 impl MatchSet {
+    pub fn raw_line(&self) -> String {
+        self.full_text.to_string()
+    }
+
     pub fn to_csv_row(&self) -> String {
         self.to_strings().join(",")
     }

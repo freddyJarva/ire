@@ -86,14 +86,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     match begin_loop(terminal, app, contents, events) {
         // matches execute when exiting the program
         Ok((pattern, mats)) => {
-            // let stdout = io::stdout();
-            // let mut handle = io::BufWriter::new(stdout.lock());
-            let mut writer = Writer::from_path("./lala.csv").unwrap();
-            for line in mats {
-                writer.write_record(line.to_strings());
-                // writeln!(handle, "{}", line.to_tsv_row())?;
+            if let Some(output) = matches.value_of("OUTPUT") {
+                let mut writer = Writer::from_path(output).unwrap();
+                for line in mats {
+                    writer.write_record(line.to_strings())?;
+                }
+            } else {
+                let stdout = io::stdout();
+                let mut handle = io::BufWriter::new(stdout.lock());
+                for line in mats {
+                    writeln!(handle, "{}", line.raw_line())?;
+                }
+                writeln!(handle, "Lines were matched with: {}", pattern.green())?;
             }
-            // writeln!(handle, "Lines were matched with: {}", pattern.green())?;
         }
         Err(err) => {
             eprintln!("program crash: {}", err)
