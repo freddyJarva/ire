@@ -1,9 +1,15 @@
-use regex::{Captures, Regex};
+use regex::{Captures, Match, Regex};
 
 #[derive(Debug, PartialEq)]
 pub enum MatchType {
     Normal(String),
     Group(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct MatchItem<'a> {
+    pub text: &'a str,
+    pub mtype: MatchType,
 }
 
 #[derive(Debug, PartialEq)]
@@ -13,6 +19,10 @@ pub struct MatchSet {
 }
 
 impl MatchSet {
+    pub fn from(full_text: &str, captures: &Captures) -> Self {
+        into_matchset(&full_text, captures)
+    }
+
     pub fn raw_line(&self) -> String {
         self.full_text.to_string()
     }
@@ -110,7 +120,7 @@ mod tests {
         };
     }
 
-    macro_rules! test_into_matchset {
+    macro_rules! test_matchset_from {
         ($($func_name:ident: $value:expr,)*) => {
         $(
             #[test]
@@ -124,7 +134,7 @@ mod tests {
                     items: items
                 };
                 // When
-                let actual: MatchSet = into_matchset(content, &captures);
+                let actual: MatchSet = MatchSet::from(content, &captures);
 
                 // Then
                 assert_eq!(expected, actual)
@@ -133,7 +143,7 @@ mod tests {
         };
     }
 
-    test_into_matchset! {
+    test_matchset_from! {
         into_match_set_basetest : (r".+(hello).+(world)", "lala hello bleble world", vec![
             matchtype!(Normal "lala "),
             matchtype!(Group "hello"),
