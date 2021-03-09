@@ -20,7 +20,34 @@ pub struct MatchSet {
 
 impl MatchSet {
     pub fn from(full_text: &str, captures: &Captures) -> Self {
-        into_matchset(&full_text, captures)
+        let mut items = Vec::new();
+
+        match captures.len() {
+            0..=1 => items.push(MatchType::Normal(full_text.to_string())),
+            _ => {
+                let mut previous_end = 0;
+                for i in 1..captures.len() {
+                    if let Some(mat) = captures.get(i) {
+                        if mat.start() != previous_end {
+                            items.push(MatchType::Normal(
+                                full_text[previous_end..mat.start()].to_string(),
+                            ));
+                        }
+                        items.push(MatchType::Group(
+                            full_text[mat.start()..mat.end()].to_string(),
+                        ));
+                        previous_end = mat.end();
+                    }
+                }
+                if previous_end != full_text.len() {
+                    items.push(MatchType::Normal(full_text[previous_end..].to_string()))
+                }
+            }
+        }
+        MatchSet {
+            full_text: full_text.to_string(),
+            items,
+        }
     }
 
     pub fn raw_line(&self) -> String {
@@ -61,37 +88,6 @@ impl Default for MatchSet {
     }
 }
 
-pub fn into_matchset(full_text: &str, captures: &regex::Captures) -> MatchSet {
-    let mut items = Vec::new();
-
-    match captures.len() {
-        0..=1 => items.push(MatchType::Normal(full_text.to_string())),
-        _ => {
-            let mut previous_end = 0;
-            for i in 1..captures.len() {
-                if let Some(mat) = captures.get(i) {
-                    if mat.start() != previous_end {
-                        items.push(MatchType::Normal(
-                            full_text[previous_end..mat.start()].to_string(),
-                        ));
-                    }
-                    items.push(MatchType::Group(
-                        full_text[mat.start()..mat.end()].to_string(),
-                    ));
-                    previous_end = mat.end();
-                }
-            }
-            if previous_end != full_text.len() {
-                items.push(MatchType::Normal(full_text[previous_end..].to_string()))
-            }
-        }
-    }
-    MatchSet {
-        full_text: full_text.to_string(),
-        items,
-    }
-}
-
 pub fn filter_matches<'a>(contents: &'a [String], re: &Regex) -> Vec<(&'a str, Captures<'a>)> {
     contents
         .iter()
@@ -104,7 +100,7 @@ pub fn filter_matches<'a>(contents: &'a [String], re: &Regex) -> Vec<(&'a str, C
 pub fn into_matchsets(captures: &[(&str, Captures)]) -> Vec<MatchSet> {
     let result: Vec<MatchSet> = captures
         .iter()
-        .map(|(s, cap)| into_matchset(s, cap))
+        .map(|(s, cap)| MatchSet::from(s, cap))
         .collect();
     result
 }
