@@ -186,7 +186,7 @@ fn begin_loop(
                 match Regex::new(&app.input.text) {
                     Ok(re) => {
                         let matches = filter_matches(&contents, &re);
-                        app.pattern_matches = into_matchsets(&matches);
+                        app.pattern_matches = into_matchsets(&matches, &re);
                         let pattern_matches: Vec<ListItem> = app
                             .pattern_matches
                             .iter()

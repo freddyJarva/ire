@@ -19,8 +19,9 @@ pub struct MatchSet {
 }
 
 impl MatchSet {
-    pub fn from(full_text: &str, captures: &Captures) -> Self {
+    pub fn from(full_text: &str, re: &Regex) -> Self {
         let mut items = Vec::new();
+        let captures = re.captures(full_text).unwrap();
 
         match captures.len() {
             0..=1 => items.push(MatchType::Normal(full_text.to_string())),
@@ -88,20 +89,16 @@ impl Default for MatchSet {
     }
 }
 
-pub fn filter_matches<'a>(contents: &'a [String], re: &Regex) -> Vec<(&'a str, Captures<'a>)> {
+pub fn filter_matches<'a>(contents: &'a [String], re: &Regex) -> Vec<&'a str> {
     contents
         .iter()
         .map(String::as_str)
         .filter(|s| re.is_match(s))
-        .map(|s| (s, re.captures(s).unwrap()))
         .collect()
 }
 
-pub fn into_matchsets(captures: &[(&str, Captures)]) -> Vec<MatchSet> {
-    let result: Vec<MatchSet> = captures
-        .iter()
-        .map(|(s, cap)| MatchSet::from(s, cap))
-        .collect();
+pub fn into_matchsets(captures: &[&str], re: &Regex) -> Vec<MatchSet> {
+    let result: Vec<MatchSet> = captures.iter().map(|s| MatchSet::from(s, re)).collect();
     result
 }
 
@@ -124,13 +121,12 @@ mod tests {
                 // Given
                 let (re, content, items) = $value;
                 let re = Regex::new(re).unwrap();
-                let captures = re.captures(content).unwrap();
                 let expected = MatchSet {
                     full_text: content.to_string(),
                     items: items
                 };
                 // When
-                let actual: MatchSet = MatchSet::from(content, &captures);
+                let actual: MatchSet = MatchSet::from(content, &re);
 
                 // Then
                 assert_eq!(expected, actual)
@@ -160,10 +156,6 @@ mod tests {
         given0or1MatchReturnsNone_thenDoNotReturnIt : (r"(lala)?(bleble)", "bleble", vec![
             matchtype!(Group "bleble"),
         ]),
-        // TODO given0toNMatchReturnsMultiple_thenReturnEachPartAsSeparateGroup : (r"(lala )*", "lala lala ", vec![
-        //     matchtype!(Group "lala "),
-        //     matchtype!(Group "lala "),
-        // ]),
     }
 
     macro_rules! test_print_options {
