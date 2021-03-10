@@ -29,18 +29,20 @@ use tui::{
 use input::InputMode;
 
 /// App holds the state of the application
-struct App {
+struct App<'a> {
     input: Input,
     // pattern_matches: Vec<String>,
-    pattern_matches: Vec<MatchSet>,
+    pattern_matches: Vec<MatchSet<'a>>,
+    re: Regex,
 }
 
-impl Default for App {
-    fn default() -> App {
+impl<'a> Default for App<'a> {
+    fn default() -> App<'a> {
         App {
             input: Input::default(),
             // pattern_matches: Vec::new(),
             pattern_matches: Vec::new(),
+            re: Regex::new("").unwrap(),
         }
     }
 }
@@ -85,7 +87,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     match begin_loop(terminal, app, contents, events) {
         // matches execute when exiting the program
-        Ok((pattern, mats)) => {
+        Ok((contents, re)) => {
+            let mats = filter_matches(&contents, &re);
+            let mats = into_matchsets(&mats, &re);
             if let Some(output) = matches.value_of("OUTPUT") {
                 let mut writer = Writer::from_path(output).unwrap();
                 for line in mats {
@@ -97,7 +101,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 for line in mats {
                     writeln!(handle, "{}", line.raw_line())?;
                 }
-                writeln!(handle, "Lines were matched with: {}", pattern.green())?;
+                writeln!(handle, "Lines were matched with: {}", re.as_str().green())?;
             }
         }
         Err(err) => {
@@ -108,14 +112,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn begin_loop(
+fn begin_loop<'a>(
     mut terminal: Terminal<
         TermionBackend<AlternateScreen<MouseTerminal<termion::raw::RawTerminal<io::Stdout>>>>,
     >,
-    mut app: App,
+    mut app: App<'a>,
     contents: Vec<String>,
     mut events: Events,
-) -> Result<(String, Vec<MatchSet>), Box<dyn Error>> {
+) -> Result<(Vec<String>, Regex), Box<dyn Error>> {
     loop {
         // Draw UI
         terminal
@@ -184,23 +188,19 @@ fn begin_loop(
                 }
 
                 match Regex::new(&app.input.text) {
-                    Ok(re) => {
-                        let matches = filter_matches(&contents, &re);
-                        app.pattern_matches = into_matchsets(&matches, &re);
-                        let pattern_matches: Vec<ListItem> = app
-                            .pattern_matches
-                            .iter()
-                            .map(|color_styles| color_styles.style())
-                            .map(|spans| ListItem::new(spans))
-                            .collect();
-                        let pattern_matches = List::new(pattern_matches)
-                            .block(Block::default().borders(Borders::ALL).title("Messages"));
-                        f.render_widget(pattern_matches, chunks[2]);
-                    }
-                    Err(_) => {
-                        // Don't update match screen until proper match is found
-                    }
+                    Ok(re) => app.re = re,
+                    Err(_) => {}
                 }
+                let matches = filter_matches(&contents, &app.re);
+                let pattern_matches = into_matchsets(&matches, &app.re);
+                let pattern_matches: Vec<ListItem> = pattern_matches
+                    .iter()
+                    .map(|color_styles| color_styles.style())
+                    .map(|spans| ListItem::new(Spans::from(spans)))
+                    .collect();
+                let pattern_matches = List::new(pattern_matches)
+                    .block(Block::default().borders(Borders::ALL).title("Messages"));
+                f.render_widget(pattern_matches, chunks[2]);
             })
             .expect("Failure on draw");
 
@@ -218,7 +218,7 @@ fn begin_loop(
                     _ => {}
                 },
                 InputMode::Editing => match input {
-                    Key::Char('\n') => return Ok((app.input.text, app.pattern_matches)),
+                    Key::Char('\n') => return Ok((contents.to_vec(), app.re)),
                     Key::Alt(',') => app.input.previous_boundary(),
                     Key::Alt('.') => app.input.next_boundary(),
                     Key::Char(c) => {

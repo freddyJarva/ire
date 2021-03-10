@@ -63,16 +63,16 @@ impl Styled for Vec<ColorStyle> {
     }
 }
 
-impl Styled for MatchSet {
+impl Styled for MatchSet<'_> {
     fn style(&self) -> Spans {
         let hs = vec![Color::Yellow, Color::Blue, Color::Red];
         let mut highlight_styles = hs.iter().cycle();
 
         let spans: Vec<Span> = self
-            .items
+            .to_matchtypes()
             .iter()
             .map(|color_style| match color_style {
-                MatchType::Normal(s) => Span::raw(s),
+                MatchType::Normal(s) => Span::raw(s.to_string()),
                 MatchType::Group(s) => {
                     let style = match highlight_styles.next().unwrap() {
                         Color::Red => Style::default().fg(Color::Red),
@@ -80,7 +80,7 @@ impl Styled for MatchSet {
                         Color::Blue => Style::default().fg(Color::Blue),
                         _ => Style::default().fg(Color::Green),
                     };
-                    Span::styled(s, style)
+                    Span::styled(s.to_string(), style)
                 }
             })
             .collect();

@@ -12,43 +12,16 @@ pub struct MatchItem<'a> {
     pub mtype: MatchType,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct MatchSet {
-    pub items: Vec<MatchType>,
-    pub full_text: String,
+#[derive(Debug)]
+pub struct MatchSet<'a> {
+    pub full_text: &'a str,
+    pub re: &'a Regex,
+    // pub items: Vec<MatchType>,
 }
 
-impl MatchSet {
-    pub fn from(full_text: &str, re: &Regex) -> Self {
-        let mut items = Vec::new();
-        let captures = re.captures(full_text).unwrap();
-
-        match captures.len() {
-            0..=1 => items.push(MatchType::Normal(full_text.to_string())),
-            _ => {
-                let mut previous_end = 0;
-                for i in 1..captures.len() {
-                    if let Some(mat) = captures.get(i) {
-                        if mat.start() != previous_end {
-                            items.push(MatchType::Normal(
-                                full_text[previous_end..mat.start()].to_string(),
-                            ));
-                        }
-                        items.push(MatchType::Group(
-                            full_text[mat.start()..mat.end()].to_string(),
-                        ));
-                        previous_end = mat.end();
-                    }
-                }
-                if previous_end != full_text.len() {
-                    items.push(MatchType::Normal(full_text[previous_end..].to_string()))
-                }
-            }
-        }
-        MatchSet {
-            full_text: full_text.to_string(),
-            items,
-        }
+impl<'a> MatchSet<'a> {
+    pub fn from(full_text: &'a str, re: &'a Regex) -> Self {
+        MatchSet { full_text, re }
     }
 
     pub fn raw_line(&self) -> String {
@@ -60,8 +33,34 @@ impl MatchSet {
     }
 
     pub fn to_strings(&self) -> Vec<String> {
-        let res: Vec<String> = self
-            .items
+        let mut items = Vec::new();
+        let captures = self.re.captures(self.full_text).unwrap();
+
+        match captures.len() {
+            0..=1 => items.push(MatchType::Normal(self.full_text.to_string())),
+            _ => {
+                let mut previous_end = 0;
+                for i in 1..captures.len() {
+                    if let Some(mat) = captures.get(i) {
+                        if mat.start() != previous_end {
+                            items.push(MatchType::Normal(
+                                self.full_text[previous_end..mat.start()].to_string(),
+                            ));
+                        }
+                        items.push(MatchType::Group(
+                            self.full_text[mat.start()..mat.end()].to_string(),
+                        ));
+                        previous_end = mat.end();
+                    }
+                }
+                if previous_end != self.full_text.len() {
+                    items.push(MatchType::Normal(
+                        self.full_text[previous_end..].to_string(),
+                    ))
+                }
+            }
+        }
+        let res: Vec<String> = items
             .iter()
             .filter(|mt| match mt {
                 MatchType::Group(_) => true,
@@ -75,17 +74,39 @@ impl MatchSet {
         res
     }
 
+    pub fn to_matchtypes(&self) -> Vec<MatchType> {
+        let mut items = Vec::new();
+        let captures = self.re.captures(self.full_text).unwrap();
+
+        match captures.len() {
+            0..=1 => items.push(MatchType::Normal(self.full_text.to_string())),
+            _ => {
+                let mut previous_end = 0;
+                for i in 1..captures.len() {
+                    if let Some(mat) = captures.get(i) {
+                        if mat.start() != previous_end {
+                            items.push(MatchType::Normal(
+                                self.full_text[previous_end..mat.start()].to_string(),
+                            ));
+                        }
+                        items.push(MatchType::Group(
+                            self.full_text[mat.start()..mat.end()].to_string(),
+                        ));
+                        previous_end = mat.end();
+                    }
+                }
+                if previous_end != self.full_text.len() {
+                    items.push(MatchType::Normal(
+                        self.full_text[previous_end..].to_string(),
+                    ))
+                }
+            }
+        }
+        items
+    }
+
     pub fn to_tsv_row(&self) -> String {
         self.to_strings().join("\t")
-    }
-}
-
-impl Default for MatchSet {
-    fn default() -> Self {
-        MatchSet {
-            items: Vec::new(),
-            full_text: "".to_string(),
-        }
     }
 }
 
@@ -97,8 +118,8 @@ pub fn filter_matches<'a>(contents: &'a [String], re: &Regex) -> Vec<&'a str> {
         .collect()
 }
 
-pub fn into_matchsets(captures: &[&str], re: &Regex) -> Vec<MatchSet> {
-    let result: Vec<MatchSet> = captures.iter().map(|s| MatchSet::from(s, re)).collect();
+pub fn into_matchsets<'a>(text_lines: &[&'a str], re: &'a Regex) -> Vec<MatchSet<'a>> {
+    let result: Vec<MatchSet> = text_lines.iter().map(|s| MatchSet::from(&s, &re)).collect();
     result
 }
 
@@ -121,15 +142,15 @@ mod tests {
                 // Given
                 let (re, content, items) = $value;
                 let re = Regex::new(re).unwrap();
-                let expected = MatchSet {
-                    full_text: content.to_string(),
-                    items: items
-                };
+                // let expected = MatchSet {
+                //     full_text: content,
+                //     re: &re
+                // };
                 // When
-                let actual: MatchSet = MatchSet::from(content, &re);
+                let actual: Vec<MatchType> = MatchSet::from(content, &re).to_matchtypes();
 
                 // Then
-                assert_eq!(expected, actual)
+                assert_eq!(items, actual)
             }
         )*
         };
@@ -164,9 +185,8 @@ mod tests {
                 #[test]
                 fn $test_name() {
                     // Given
-                    let (expected, items) = $values;
-                    let mut match_set = MatchSet::default();
-                    match_set.items = items;
+                    let (expected, full_text, re) = $values;
+                    let match_set = MatchSet{full_text, re: &Regex::new(re).unwrap()};
                     assert_eq!(expected, &match_set.$func_name())
                 }
             )*
@@ -174,15 +194,7 @@ mod tests {
     }
 
     test_print_options! {
-        to_csv_row : return_comma_separated_row :  ("remain,remain also", vec![
-            matchtype!(Normal "drop"),
-            matchtype!(Group "remain"),
-            matchtype!(Group "remain also"),
-        ]),
-        to_tsv_row : return_tab_separated_row : ("remain\tremain also", vec![
-            matchtype!(Normal "drop"),
-            matchtype!(Group "remain"),
-            matchtype!(Group "remain also"),
-        ]),
+        to_csv_row : return_comma_separated_row :  ("remain,remain also", "drop remain remain also", r"\w+ (\w+) (\w+ \w+)"),
+        to_tsv_row : return_tab_separated_row : ("remain\tremain also", "drop remain remain also", r"\w+ (\w+) (\w+ \w+)"),
     }
 }
