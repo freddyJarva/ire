@@ -1,8 +1,11 @@
 # ire
+
 Interactive regex built in Rust
 
 Test your regex pattern on a file, and get instant updates on what lines match, and what parts of the line are captured by groups.
 There also exists an option to output the captured groups in csv format.
+
+Only works for linux distributions at the moment.
 
 ```
 interactive_regex 1.0
@@ -21,4 +24,3 @@ OPTIONS:
 ARGS:
     <FILENAME>
 ```
-
