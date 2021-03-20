@@ -27,9 +27,11 @@ ARGS:
 
 
 ## Install
-Right now, the only way to install is to build from source.
-You need rust. check out this page for east install instructions: https://www.rust-lang.org/tools/install
-Efter that, just clone this repo and build:
+Right now, the only way to install is to build from source, which means you need rust. 
+
+check out this page for easy install instructions: https://www.rust-lang.org/tools/install
+
+After that, just clone this repo and build:
 
 ```sh
 git clone https://github.com/freddyJarva/ire.git
