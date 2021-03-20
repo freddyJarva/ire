@@ -24,3 +24,17 @@ OPTIONS:
 ARGS:
     <FILENAME>
 ```
+
+
+## Install
+Right now, the only way to install is to build from source.
+You need rust. check out this page for east install instructions: https://www.rust-lang.org/tools/install
+Efter that, just clone this repo and build:
+
+```sh
+git clone https://github.com/freddyJarva/ire.git
+cd ./ire
+cargo build --release
+```
+
+the built executable can then be found at: `./target/release/ire`
